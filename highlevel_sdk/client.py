@@ -112,6 +112,7 @@ class HighLevelRequest(object):
         method,
         node,
         endpoint,
+        api=None,
         api_type=None,
         target_class=None,
         response_parser=ObjectParser,
@@ -129,6 +130,7 @@ class HighLevelRequest(object):
         self._method = method
         self._node = node
         self._endpoint = endpoint
+        self._api = api
         self._api_type = api_type
         self._path = f"{endpoint}/{node}"
         self._params = {}
@@ -162,8 +164,8 @@ class HighLevelRequest(object):
             cursor = Cursor(
                 target_objects_class=self._target_class,
                 params=params,
-                node=self._node,
                 endpoint=self._endpoint,
+                api=self._api,
                 object_parser=self._response_parser,
             )
             cursor.load_next_page()
@@ -186,7 +188,7 @@ class Cursor(object):
     Iterates over pages of data.
     """
 
-    def __init__(self, target_objects_class, params, node, endpoint, object_parser) -> None:
+    def __init__(self, target_objects_class, params, endpoint, api, object_parser) -> None:
         """
         Args:
             target_objects_class : an instance the AbstractObject class. Must have an ID
@@ -198,9 +200,9 @@ class Cursor(object):
 
         self._target_objects_class = target_objects_class
         self._params = params
-        self._node = node
         self._endpoint = endpoint
-        self._path = f"{endpoint}/{node}"
+        self._api = api
+        self._path = f"{endpoint}"
         self._object_parser = object_parser
         self._queue = []
         self._headers = None
@@ -238,7 +240,7 @@ class Cursor(object):
         response = self._api._call(
             method="GET",
             path=self._path,
-            params=self._params,
+            data=self._params,
         )
         self._headers = response.headers()
 
