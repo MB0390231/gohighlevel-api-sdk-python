@@ -1,5 +1,6 @@
 import json
 import collections.abc as collections_abc
+from highlevel_sdk.client import HighLevelClient
 
 
 class AbstractObject(collections_abc.MutableMapping):
@@ -11,9 +12,10 @@ class AbstractObject(collections_abc.MutableMapping):
     class Fields:
         pass
 
-    def __init__(self, api=None, id=None):
+    def __init__(self, id=None):
         self._data = {}
-        self.api = api
+        self.api = HighLevelClient
+
         if id:
             self["id"] = id
 
@@ -63,10 +65,18 @@ class AbstractObject(collections_abc.MutableMapping):
         """
         raise NotImplementedError
 
+    def get(self):
+        """
+        Returns the object from the API
+        """
+        raise NotImplementedError
+
     # reads in data from json object
     def _set_data(self, data):
-        if hasattr(data, "json"):
-            data = data.json()
+        """
+        sets data from a json object
+        """
+        if isinstance(data, dict):
             for key, value in data.items():
                 self[key] = value
         else:
@@ -90,12 +100,3 @@ class AbstractObject(collections_abc.MutableMapping):
         new_object = target_class()
         new_object._set_data(data)
         return new_object
-
-    def get(self):
-        """
-        Returns the object data
-        """
-        path = self.get_endpoint()
-        data = self.api._call("GET", path)
-        self._set_data(data)
-        return self
