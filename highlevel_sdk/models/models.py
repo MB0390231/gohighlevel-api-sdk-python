@@ -8,7 +8,7 @@ class Agency(AbstractObject):
         # id is the company id
         assert token_data is not None, "Agency must have an access token"
 
-        super().__init__(token_data, id)
+        super().__init__(token_data=token_data, id=id)
 
     def get_endpoint(self):
         if self["id"] is None:
@@ -26,51 +26,19 @@ class Agency(AbstractObject):
 
         Returns:
             A Location Object
-            {
-                "access_token": "ab12dc0ae1234a7898f9ff06d4f69gh",
-                "token_type": "Bearer",
-                "expires_in": 86399,
-                "scope": "conversations/message.readonly conversations/message.write",
-                "locationId": "l1C08ntBrFjLS0elLIYU"
-            }
         """
 
         path = "/oauth/locationToken"
         data = {"companyId": self["id"], "locationId": location_id}
         response = self.api._call("POST", path, data=data, token_data=self.token_data)
-        access_token_data = response.json()
-        loc = Location(id=location_id)
-        loc.set_token_data(access_token_data)
+        token_data = response.json()
+        loc = Location(token_data=token_data, id=location_id)
         return loc
-
-
-class Contact(AbstractObject):
-    def __init__(self, token_data=None, id=None):
-        super().__init__(id)
-
-    def _set_token_data(self, token_data):
-        self.token_data = token_data
-
-    def get_endpoint(self):
-        if self["id"] is None:
-            raise ValueError("Contact must have an id to get endpoint")
-        return "/contacts/" + self["id"]
-
-
-class Form(AbstractObject):
-    def __init__(self, api=None, id=None):
-        super().__init__(api, id)
-
-    def get_endpoint(self):
-        if self["id"] is None:
-            raise ValueError("Form must have an id to get endpoint")
-
-        return "/forms/" + self["id"]
 
 
 class Location(AbstractObject):
     def __init__(self, token_data=None, id=None):
-        super().__init__(id=id)
+        super().__init__(token_data=token_data, id=id)
 
     def get_endpoint(self):
         if self["id"] is None:
@@ -109,3 +77,27 @@ class Location(AbstractObject):
         request.add_params(params)
 
         return request.execute()
+
+
+class Contact(AbstractObject):
+    def __init__(self, token_data=None, id=None):
+        super().__init__(token_data=token_data, id=id)
+
+    def _set_token_data(self, token_data):
+        self.token_data = token_data
+
+    def get_endpoint(self):
+        if self["id"] is None:
+            raise ValueError("Contact must have an id to get endpoint")
+        return "/contacts/" + self["id"]
+
+
+class Form(AbstractObject):
+    def __init__(self, token_data=None, id=None):
+        super().__init__(token_data=token_data, id=id)
+
+    def get_endpoint(self):
+        if self["id"] is None:
+            raise ValueError("Form must have an id to get endpoint")
+
+        return "/forms/" + self["id"]
