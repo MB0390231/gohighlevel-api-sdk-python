@@ -1,10 +1,55 @@
 from highlevel_sdk.models.abstract_object import AbstractObject
 from highlevel_sdk.client import HighLevelRequest
+from highlevel_sdk.object_parser import ObjectParser
+
+
+class Agency(AbstractObject):
+    def __init__(self, token_data=None, id=None):
+        # id is the company id
+        assert token_data is not None, "Agency must have an access token"
+
+        super().__init__(token_data, id)
+
+    def get_endpoint(self):
+        if self["id"] is None:
+            raise ValueError("Agency must have an id to get endpoint")
+        return "/agencies/" + self["id"]
+
+    def get_location(self, location_id):
+        """
+        Queries the API for an location access token and returns a Location Object.
+
+        Args:
+            company_id (str): The company ID.
+            location_id (str): The location ID.
+            access_token (str): The agency level access token.
+
+        Returns:
+            A Location Object
+            {
+                "access_token": "ab12dc0ae1234a7898f9ff06d4f69gh",
+                "token_type": "Bearer",
+                "expires_in": 86399,
+                "scope": "conversations/message.readonly conversations/message.write",
+                "locationId": "l1C08ntBrFjLS0elLIYU"
+            }
+        """
+
+        path = "/oauth/locationToken"
+        data = {"companyId": self["id"], "locationId": location_id}
+        response = self.api._call("POST", path, data=data, token_data=self.token_data)
+        access_token_data = response.json()
+        loc = Location(id=location_id)
+        loc.set_token_data(access_token_data)
+        return loc
 
 
 class Contact(AbstractObject):
-    def __init__(self, api=None, id=None):
-        super().__init__(api, id)
+    def __init__(self, token_data=None, id=None):
+        super().__init__(id)
+
+    def _set_token_data(self, token_data):
+        self.token_data = token_data
 
     def get_endpoint(self):
         if self["id"] is None:
@@ -24,38 +69,43 @@ class Form(AbstractObject):
 
 
 class Location(AbstractObject):
-    def __init__(self, api=None, id=None):
-        super().__init__(api, id)
+    def __init__(self, token_data=None, id=None):
+        super().__init__(id=id)
 
     def get_endpoint(self):
         if self["id"] is None:
             raise ValueError("Location must have an id to get endpoint")
         return "/locations/" + self["id"]
 
+    def access_token_data(self):
+        return self.token_data
+
+    def get(self):
+        request = HighLevelRequest(
+            method="GET",
+            node=None,
+            endpoint=self.get_endpoint(),
+            access_token=self.token_data,
+            api=self.api,
+            api_type="EDGE",
+            target_class=Location,
+            response_parser=ObjectParser,
+        )
+        return request.execute()
+
     def get_contacts(self, params=None):
         request = HighLevelRequest(
             method="GET",
             node=None,
             endpoint="/contacts/",
+            token_data=self.token_data,
             api=self.api,
             api_type="EDGE",
             target_class=Contact,
+            response_parser=ObjectParser,
         )
-
-        request.add_params({"location_id": self["id"]})
-
-        return request.execute()
-
-    def get_forms(self, params=None):
-        request = HighLevelRequest(
-            method="GET",
-            node=None,
-            endpoint="/forms",
-            api=self.api,
-            api_type="EDGE",
-            target_class=Form,
-        )
-
-        request.add_params({"location_id": self["id"]})
+        params = params or {}
+        params["locationId"] = self["id"]
+        request.add_params(params)
 
         return request.execute()

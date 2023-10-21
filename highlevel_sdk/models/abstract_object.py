@@ -12,12 +12,18 @@ class AbstractObject(collections_abc.MutableMapping):
     class Fields:
         pass
 
-    def __init__(self, id=None):
+    def __init__(self, token_data=None, id=None):
         self._data = {}
         self.api = HighLevelClient
 
         if id:
             self["id"] = id
+
+        if token_data:
+            self.set_token_data(token_data)
+
+    def set_token_data(self, token_data):
+        self.token_data = token_data
 
     def __getitem__(self, key):
         return self._data[str(key)]
@@ -96,7 +102,8 @@ class AbstractObject(collections_abc.MutableMapping):
     def export_all_data(self):
         return self.export_value(self._data)
 
-    def create_object(data, target_class):
+    def create_object(data, target_class, token_data):
         new_object = target_class()
         new_object._set_data(data)
+        new_object.set_token_data(token_data)
         return new_object

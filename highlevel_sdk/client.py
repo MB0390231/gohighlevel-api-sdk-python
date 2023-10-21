@@ -14,20 +14,6 @@ class HighLevelClient(object):
     def __init__(self) -> None:
         pass
 
-    # @classmethod
-    # def init(cls):
-    #     api = cls()
-    #     cls._set_default_api(api)
-    #     return api
-
-    # @classmethod
-    # def _set_default_api(cls, api):
-    #     cls._default_api = api
-
-    # @classmethod
-    # def get_default_api(cls):
-    #     return cls._default_api
-
     def build_headers(access_token=None):
         assert access_token != None, "Must provide access token"
         headers = {
@@ -39,8 +25,9 @@ class HighLevelClient(object):
         return headers
 
     @classmethod
-    def _call(cls, method, path, access_token=None, data=None):
+    def _call(cls, method, path, token_data=None, data=None):
         path = HighLevelConfig.API_BASE_URL + path
+        access_token = token_data["access_token"]
         headers = cls.build_headers(access_token=access_token)
         if method in ("GET", "DELETE"):
             response = request(method, path, headers=headers, params=data)
@@ -53,6 +40,9 @@ class HighLevelClient(object):
             status_code=response.status_code,
             call={"method": method, "path": path, "params": data, "headers": headers},
         )
+
+        # push token_data to response
+        highlevel_response.token_data = token_data
 
         if highlevel_response.is_error():
             raise highlevel_response.error()
@@ -106,7 +96,7 @@ class HighLevelRequest(object):
         method,
         node,
         endpoint,
-        access_token=None,
+        token_data=None,
         api=None,
         api_type=None,
         target_class=None,
@@ -125,7 +115,7 @@ class HighLevelRequest(object):
         self._method = method
         self._node = node
         self._endpoint = endpoint
-        self.access_token = access_token
+        self.token_data = token_data
         self._api = api
         self._api_type = api_type
         self._path = f"{endpoint}/{node}"
@@ -161,7 +151,7 @@ class HighLevelRequest(object):
                 target_objects_class=self._target_class,
                 params=params,
                 endpoint=self._endpoint,
-                access_token=self.access_token,
+                token_data=self.token_data,
                 api=self._api,
                 object_parser=self._response_parser,
             )
@@ -171,12 +161,13 @@ class HighLevelRequest(object):
             method=self._method,
             path=self._path,
             params=params,
-            access_token=self.access_token,
+            token_data=self.token_data,
         )
+
         if response.error():
             raise response.error()
         if self._response_parser:
-            return self._response_parser.parse_single(response.json())
+            return self._response_parser.parse_single(response.json(), self._target_class, self.token_data)
         else:
             return response
 
@@ -186,7 +177,7 @@ class Cursor(object):
     Iterates over pages of data.
     """
 
-    def __init__(self, target_objects_class, params, endpoint, access_token, api, object_parser) -> None:
+    def __init__(self, target_objects_class, params, endpoint, token_data, api, object_parser) -> None:
         """
         Args:
             target_objects_class : an instance the AbstractObject class. Must have an ID
@@ -199,7 +190,7 @@ class Cursor(object):
         self._target_objects_class = target_objects_class
         self._params = params
         self._endpoint = endpoint
-        self.access_token = access_token
+        self.token_data = token_data
         self._api = api
         self._path = f"{endpoint}"
         self._object_parser = object_parser
@@ -239,12 +230,12 @@ class Cursor(object):
             method="GET",
             path=self._path,
             data=self._params,
-            access_token=self.access_token,
+            token_data=self.token_data,
         )
         self._headers = response.headers
 
         body = response.json()
-        self._queue = self._object_parser.parse_multiple(body, self._target_objects_class)
+        self._queue = self._object_parser.parse_multiple(body, self._target_objects_class, self.token_data)
         if not self._queue:
             return False
         self._has_next_page = body["meta"]["nextPage"] is not None
@@ -255,6 +246,3 @@ class Cursor(object):
             return False
 
         return True
-
-
-"http://services.leadconnectorhq.com/contacts/?limit=100&locationId=K7z06ykmITzrREtf0Lfb&startAfter=1694042620470&startAfterId=12Tiuh9b8WZJtreaWxDk"
