@@ -71,11 +71,16 @@ class AbstractObject(collections_abc.MutableMapping):
         """
         raise NotImplementedError
 
-    def get(self):
+    def get(self, params=None):
         """
         Returns the object from the API
         """
-        raise NotImplementedError
+        method = "GET"
+        path = self.get_endpoint()
+        token_data = self.access_token_data()
+        response = self.api._call(method, path, token_data=token_data, data=params)
+        self._set_data(response.json())
+        return self
 
     # reads in data from json object
     def _set_data(self, data):

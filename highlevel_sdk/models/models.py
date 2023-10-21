@@ -48,19 +48,6 @@ class Location(AbstractObject):
     def access_token_data(self):
         return self.token_data
 
-    def get(self):
-        request = HighLevelRequest(
-            method="GET",
-            node=None,
-            endpoint=self.get_endpoint(),
-            access_token=self.token_data,
-            api=self.api,
-            api_type="EDGE",
-            target_class=Location,
-            response_parser=ObjectParser,
-        )
-        return request.execute()
-
     def get_contacts(self, params=None):
         request = HighLevelRequest(
             method="GET",
