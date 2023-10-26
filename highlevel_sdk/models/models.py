@@ -11,9 +11,8 @@ class Agency(AbstractObject):
         super().__init__(token_data=token_data, id=id)
 
     def get_endpoint(self):
-        if self["id"] is None:
-            raise ValueError("Agency must have an id to get endpoint")
-        return "/agencies/" + self["id"]
+        # get() is not available for Agency
+        raise NotImplementedError("Agency does not have an endpoint")
 
     def get_location(self, location_id):
         """
@@ -32,7 +31,7 @@ class Agency(AbstractObject):
         data = {"companyId": self["id"], "locationId": location_id}
         response = self.api._call("POST", path, data=data, token_data=self.token_data)
         token_data = response.json()
-        loc = Location(token_data=token_data, id=location_id)
+        loc = Location(token_data=token_data, id=location_id).get()
         return loc
 
 
@@ -45,22 +44,21 @@ class Location(AbstractObject):
             raise ValueError("Location must have an id to get endpoint")
         return "/locations/" + self["id"]
 
-    def access_token_data(self):
-        return self.token_data
-
-    def get_contacts(self, params=None):
+    def get_contacts(self, limit=20):
         request = HighLevelRequest(
             method="GET",
             node=None,
             endpoint="/contacts/",
-            token_data=self.token_data,
+            token_data=self.get_token_data(),
             api=self.api,
             api_type="EDGE",
             target_class=Contact,
             response_parser=ObjectParser,
         )
-        params = params or {}
-        params["locationId"] = self["id"]
+        params = {
+            "limit": limit,
+            "locationId": self["id"],
+        }
         request.add_params(params)
 
         return request.execute()
