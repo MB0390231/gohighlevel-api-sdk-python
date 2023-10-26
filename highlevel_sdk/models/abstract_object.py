@@ -25,6 +25,21 @@ class AbstractObject(collections_abc.MutableMapping):
     def set_token_data(self, token_data):
         self.token_data = token_data
 
+    def get_token_data(self):
+        return self.token_data
+
+    def refresh_token(self):
+        if not self.token_data:
+            raise ValueError("Token data is not set")
+
+        from highlevel_sdk.auth import refresh_token
+
+        token_data = refresh_token(self.token_data["refresh_token"])
+
+        self.set_token_data(token_data)
+
+        return
+
     def __getitem__(self, key):
         return self._data[str(key)]
 
@@ -77,7 +92,7 @@ class AbstractObject(collections_abc.MutableMapping):
         """
         method = "GET"
         path = self.get_endpoint()
-        token_data = self.access_token_data()
+        token_data = self.get_token_data()
         response = self.api._call(method, path, token_data=token_data, data=params)
         self._set_data(response.json())
         return self
