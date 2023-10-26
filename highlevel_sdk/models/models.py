@@ -68,13 +68,12 @@ class Contact(AbstractObject):
     def __init__(self, token_data=None, id=None):
         super().__init__(token_data=token_data, id=id)
 
-    def _set_token_data(self, token_data):
-        self.token_data = token_data
-
     def get_endpoint(self):
         if self["id"] is None:
             raise ValueError("Contact must have an id to get endpoint")
         return "/contacts/" + self["id"]
+    
+    
 
 
 class Form(AbstractObject):
