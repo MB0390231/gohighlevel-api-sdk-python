@@ -16,7 +16,7 @@ To authenticate with the GoHighLevel API, you can follow the OAuth flow below:
 
 - Navigate to https://marketplace.gohighlevel.com/ and sign up for a developer account.
 - Once you have created a developer account, go to "My Apps" and click on "Create App".
-- Give it a name, make it public or private, and choose whether you need the "Agency" or "Sub-Account" distribution type. Pick both. You won't regret it.
+- Give it a name, make it public or private, and choose whether you need the "Agency" or "Sub-Account" distribution type. Pick both. You won't regret it. This will allow you to generate an agency access token that can be used to retrieve access tokens for sub-accounts without having to go through the OAuth flow again for each sub-account (This wasn't possible until recently and I had to go though the OAuth flow for each sub-account. It was not fun. )
 
 - Click on the app you have just created and you will be directed to the "Settings" page and should see sections for "Scopes", "Redirect URLs", and "Client Keys".
 
@@ -69,7 +69,9 @@ To authenticate with the GoHighLevel API, you can follow the OAuth flow below:
 
 You can now use this access token to authenticate your requests to the GoHighLevel API. You will want to edit the auth.py routes to save the access token to a database or file for later use. Additionally, your access token will be short lived, but can be refreshed using the refresh token.
 
-To refresh your access token, you can use the refresh_token function in the auth.py file to get a new access token.
+To refresh your access token, you can either use the refresh_token function in the auth.py file to get a new access token or you can use the refresh_token method on any of the HighLevel objects.
+
+You will then want to save the new token data to your database or file for later use. The old access token will still work until it expires, but the old refresh token will no longer work.
 
 ```python
 from highlevel_sdk.auth import refresh_token
@@ -77,4 +79,74 @@ from highlevel_sdk.auth import refresh_token
 new_token = refresh_token(refresh_token)
 ```
 
+or
+
+```python
+from highlevel_sdk.models.models import Agency
+from highlevel_sdk.models.models import Location
+from highlevel_sdk.models.models import Contact
+
+
+Agency.refresh_token()
+Location.refresh_token()
+Contact.refresh_token()
+
+print(Agency.get_token_data())
+{<token data>}
+```
+
 For more information about the GoHighLevel API and available endpoints, refer to the official documentation at [GoHighLevel API Documentation](https://highlevel.stoplight.io/docs/integrations/0443d7d1a4bd0-overview).
+
+## Usage: Working with the Agency Object
+
+```python
+from highlevel_sdk.models.models import Agency
+
+AGENCY_ACCESS = {
+    "access_token": "<YOUR_ACCESS_TOKEN>",
+    "companyId": "<YOUR_COMPANY_ID>",
+    "expires_in": 86399,
+    "hashedCompanyId": "<YOUR_HASHED_COMPANY_ID>",
+    "refresh_token": "<YOUR_REFRESH_TOKEN>",
+    "scope": "contacts.readonly locations.readonly opportunities.readonly forms.readonly",
+    "token_type": "Bearer",
+    "userType": "Company"
+}
+
+agency = Agency(token_data=AGENCY_ACCESS, id=AGENCY_ACCESS["companyId"])
+location_id = "<YOUR_LOCATION_ID>"
+location = agency.get_location(location_id=location_id)
+
+print(location)
+
+<Location> {}
+```
+
+Replace AGENCY_ACCESS with the token date retrieved from the OAuth flow.
+
+## Usage: Working with Location Objects
+
+```python
+from highlevel_sdk.models.models import Location
+
+LOCATION_ACCESS_INFO =  {
+    "access_token": "<YOUR_ACCESS_TOKEN>",
+    "companyId": "<YOUR_COMPANY_ID>",
+    "expires_in": 86399,
+    "hashedCompanyId": "<YOUR_HASHED_COMPANY_ID>",
+    "locationId": "<YOUR_LOCATION_ID>",
+    "refresh_token": "<YOUR_REFRESH_TOKEN>",
+    "scope": "contacts.readonly locations.readonly opportunities.readonly forms.readonly",
+    "token_type": "Bearer",
+    "userType": "Location"
+}
+
+location = Location(token_data=LOCATION_ACCESS_INFO, id=LOCATION_ACCESS_INFO["locationId"]).get()
+
+contacts = location.get_contacts(limit=10)
+print(contacts)
+
+[<Contact> {}, <Contact> {}, <Contact> {}]
+```
+
+Replace LOCATION_ACCESS_INFO with the token date retrieved from the OAuth flow.
