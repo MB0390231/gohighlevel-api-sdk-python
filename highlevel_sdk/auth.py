@@ -1,7 +1,7 @@
 from flask import Flask, redirect, request, jsonify
 import requests
 from urllib.parse import urlencode
-from config import HighLevelConfig
+from highlevel_sdk.config import HighLevelConfig
 
 app = Flask(__name__)
 
