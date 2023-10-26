@@ -13,8 +13,7 @@ class HighLevelConfig(object):
     SCOPES = [
         "contacts.readonly",
         "locations.readonly",
-        # "opportunities.readonly",
-        # "forms.readonly",
-        # "converations.readonly",
+        "opportunities.readonly",
+        "forms.readonly",
     ]
     REDIRECT_URI = "http://localhost:3000/oauth/callback"
